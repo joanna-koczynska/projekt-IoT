@@ -58,7 +58,6 @@ using (var client = new OpcClient("opc.tcp://localhost:4840/"))
     }
 }
 
-// TEST
 
 
 [Flags]
