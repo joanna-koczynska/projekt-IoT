@@ -2,6 +2,13 @@
 using Opc.UaFx;
 using Opc.UaFx.Client;
 using Microsoft.Azure.Devices.Client;
+using System.Text;
+using Newtonsoft.Json;
+using Microsoft.Azure.Devices;
+using Microsoft.Azure.Devices.Shared;
+using System.Data;
+using System.Net.Mime;
+
 
 
 using (var client = new OpcClient("opc.tcp://localhost:4840/"))
@@ -22,7 +29,6 @@ using (var client = new OpcClient("opc.tcp://localhost:4840/"))
 
     else
         Console.WriteLine("Production Status: Running");
-
     Console.WriteLine($"Workorder ID: {WorkorderId}");
     Console.WriteLine($"Good Count: {GoodCount}");
     Console.WriteLine($"Bad Count: {BadCount}");
@@ -56,6 +62,32 @@ using (var client = new OpcClient("opc.tcp://localhost:4840/"))
     {
         Console.WriteLine("Unknown");
     }
+
+//////////message
+   
+        string ConnectionString = "HostName=IoT-centrum.azure-devices.net;DeviceId=Device1;SharedAccessKey=kFvAwD1b2RVkGhoPbH5ESa4a/Htxfn2PTnYPz+a85Ns=";
+    
+    // Connect to the IoT Hub
+        DeviceClient deviceClient = DeviceClient.CreateFromConnectionString(ConnectionString, TransportType.Mqtt);
+    var MessageData = new
+    {
+        PStatus = ProductionStatus,
+            WID = WorkorderId,
+            GCount = GoodCount,
+            BCount = BadCount,
+            temperature = Temperature,
+            DeErrors= errorValue
+        };
+        var messageJson = JsonConvert.SerializeObject(MessageData);
+    Message message = new Message(Encoding.UTF8.GetBytes(messageJson));
+    message.ContentType = MediaTypeNames.Application.Json;
+    message.ContentEncoding = "utf-8";
+    await deviceClient.SendEventAsync(message);
+
+
+
+        // Close the connection
+        await deviceClient.CloseAsync();
 }
 
 
@@ -69,3 +101,4 @@ public enum Errors
     d = 4,
     e = 8
 };
+
