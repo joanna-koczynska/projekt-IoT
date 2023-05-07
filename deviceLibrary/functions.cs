@@ -27,9 +27,11 @@ namespace deviceLib
 
         public async Task SendMessages(OpcValue ProductionStatus, OpcValue WorkorderId, OpcValue GoodCount, OpcValue BadCount, OpcValue Temperature)
         {
+            string PSResult = (ProductionStatus == 1) ? "Running" : "Stopped";
+
             var data = new
             {
-                ProductionStatus = ProductionStatus,
+                ProductionStatus = PSResult,
                 WorkorderId = WorkorderId,
                 GoodCount = GoodCount,
                 BadCount = BadCount,
@@ -43,28 +45,21 @@ namespace deviceLib
             eventMessage.ContentEncoding = "utf-8";
             await client.SendEventAsync(eventMessage);
         }
-
-
-
         #endregion Sending Messages
 
 
         #region Device Twin
 
-        public async Task UpdateTwinAsync()
+        public async Task ReportedDeviceTwin(string propertyName, string propertyValue)
         {
             var twin = await client.GetTwinAsync();
-
-            Console.WriteLine($"\nInitial twin value received: \n{JsonConvert.SerializeObject(twin, Formatting.Indented)}");
-            Console.WriteLine();
-
             var reportedProperties = new TwinCollection();
-            reportedProperties["DateTimeLastAppLaunch"] = DateTime.Now;
+            reportedProperties[propertyName] = propertyValue;
 
             await client.UpdateReportedPropertiesAsync(reportedProperties);
         }
 
-        private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
+       /* private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
         {
             Console.WriteLine($"\tDesired property change:\n\t{JsonConvert.SerializeObject(desiredProperties)}");
             Console.WriteLine("\tSending current time as reported property");
@@ -72,11 +67,29 @@ namespace deviceLib
             reportedProperties["DateTimeLastDesiredPropertyChangeReceived"] = DateTime.Now;
 
             await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
-        }
+        }*/
+
+
 
         #endregion Device Twin
 
     }
+    /*    #region Direct Method
+          {
+                            System.Console.WriteLine("\nType your device ID (confirm with enter):");
+                            string deviceId = System.Console.ReadLine() ?? string.Empty;
+                            try
+                            {
+                                var result = await manager.ExecuteDeviceMethod("SendMessages", deviceId);
+        System.Console.WriteLine($"Method executed with status {result}");
+                            }
+                            catch (DeviceNotFoundException)
+                            {
+        System.Console.WriteLine("Device not connected!");
+    }
+                        }
+
+        #endregion*/
 
 }
 
