@@ -25,26 +25,29 @@ namespace deviceLib
 
         #region Sending Messages
 
-        public async Task SendMessages(OpcValue ProductionStatus, OpcValue WorkorderId, OpcValue GoodCount, OpcValue BadCount, OpcValue Temperature)
+        public async Task SendMessages(string ProductionStatus, OpcValue WorkorderId, OpcValue GoodCount, OpcValue BadCount, OpcValue Temperature)
         {
-            string PSResult = (ProductionStatus == 1) ? "Running" : "Stopped";
+           
+                var data = new
+                {
+                    ProductionStatus = ProductionStatus,
+                    WorkorderId = WorkorderId.Value,
+                    GoodCount = GoodCount.Value,
+                    BadCount = BadCount.Value,
+                    Temperature = Temperature.Value,
+                };
 
-            var data = new
-            {
-                ProductionStatus = PSResult,
-                WorkorderId = WorkorderId,
-                GoodCount = GoodCount,
-                BadCount = BadCount,
-                Temperature = Temperature,
-            };
+                var dataString = JsonConvert.SerializeObject(data);
 
-            var dataString = JsonConvert.SerializeObject(data);
-
-            Message eventMessage = new Message(Encoding.UTF8.GetBytes(dataString));
-            eventMessage.ContentType = MediaTypeNames.Application.Json;
-            eventMessage.ContentEncoding = "utf-8";
-            await client.SendEventAsync(eventMessage);
+                Message eventMessage = new Message(Encoding.UTF8.GetBytes(dataString));
+                eventMessage.ContentType = MediaTypeNames.Application.Json;
+                eventMessage.ContentEncoding = "utf-8";
+                await client.SendEventAsync(eventMessage);
+                if(true)
+                await Task.Delay(10000);
+            
         }
+
         #endregion Sending Messages
 
 
@@ -59,7 +62,7 @@ namespace deviceLib
             await client.UpdateReportedPropertiesAsync(reportedProperties);
         }
 
-       /* private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
+        private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
         {
             Console.WriteLine($"\tDesired property change:\n\t{JsonConvert.SerializeObject(desiredProperties)}");
             Console.WriteLine("\tSending current time as reported property");
@@ -67,29 +70,45 @@ namespace deviceLib
             reportedProperties["DateTimeLastDesiredPropertyChangeReceived"] = DateTime.Now;
 
             await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+        }
+        #endregion Device Twin
+
+        
+/*
+        #region Direct Methods
+        private async Task<MethodResponse> SendMessagesHandler(MethodRequest methodRequest, object userContext)
+        {
+            Console.WriteLine($"\tMETHOD EXECUTED : {methodRequest.Name}");
+            var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { nrOfMessages = default(int), delay = default(int) });
+           
+            return new MethodResponse(0);
+        }
+        private async Task<MethodResponse> DefaultServiceHandler(MethodRequest methodRequest, object userContext)
+        {
+            Console.WriteLine($"\tMETHOS EXECUTED : {methodRequest.Name}");
+
+            await Task.Delay(1000);
+
+            return new MethodResponse(0);
+        }
+
+        #endregion*/
+
+
+
+       /* public async Task InitializeHandlers()
+        {
+            await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
+
+            await client.SetMethodHandlerAsync("SendMessages", SendMessagesHandler, client);
+
+            await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, client);
+
         }*/
 
 
-
-        #endregion Device Twin
-
     }
-    /*    #region Direct Method
-          {
-                            System.Console.WriteLine("\nType your device ID (confirm with enter):");
-                            string deviceId = System.Console.ReadLine() ?? string.Empty;
-                            try
-                            {
-                                var result = await manager.ExecuteDeviceMethod("SendMessages", deviceId);
-        System.Console.WriteLine($"Method executed with status {result}");
-                            }
-                            catch (DeviceNotFoundException)
-                            {
-        System.Console.WriteLine("Device not connected!");
-    }
-                        }
 
-        #endregion*/
 
 }
 

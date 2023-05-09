@@ -1,0 +1,15 @@
+SELECT System.Timestamp() as windowEndTime, IoTHub.ConnectionDeviceId as deviceId,  
+ROUND(SUM(GoodCount)*100/SUM(GoodCount+BadCount),0) as KPI
+INTO [Production-KPIs] 
+FROM [Device-data] 
+TIMESTAMP BY IoTHub.EnqueuedTime 
+GROUP BY IoTHub.ConnectionDeviceId, TumblingWindow(minute,5);
+
+SELECT System.Timestamp() as windowEndTime, IoTHub.ConnectionDeviceId as deviceId,
+AVG(temperature) as avg_t,
+MIN(temperature) as min_t, 
+MAX(temperature) as max_t
+INTO [temperature] 
+FROM [Device-data] 
+TIMESTAMP BY IoTHub.EnqueuedTime 
+GROUP BY IoTHub.ConnectionDeviceId, HoppingWindow(minute,5,1);
