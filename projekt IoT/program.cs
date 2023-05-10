@@ -5,15 +5,20 @@ using Opc.UaFx;
 using Opc.UaFx.Client;
 
 
-string deviceConnectionString = "HostName=IoT-centrum.azure-devices.net;DeviceId=Device1;SharedAccessKey=kFvAwD1b2RVkGhoPbH5ESa4a/Htxfn2PTnYPz+a85Ns=";
-/*System.Console.WriteLine("Type device Connection String (confirm with enter):");
-string deviceConnectionString = System.Console.ReadLine() ?? string.Empty;*/
+//string deviceConnectionString = "HostName=IoT-centrum.azure-devices.net;DeviceId=Device1;SharedAccessKey=kFvAwD1b2RVkGhoPbH5ESa4a/Htxfn2PTnYPz+a85Ns=";
+System.Console.WriteLine("Type device Connection String (confirm with enter):");
+string deviceConnectionString = System.Console.ReadLine() ?? string.Empty;
 
 using var deviceClient = DeviceClient.CreateFromConnectionString(deviceConnectionString, TransportType.Mqtt);
 await deviceClient.OpenAsync();
 
 //using (var client = new OpcClient("opc.tcp://localhost:4840/"))
-var OPCclient = new OpcClient("opc.tcp://localhost:4840/");
+//var OPCclient = new OpcClient("opc.tcp://localhost:4840/");
+
+System.Console.WriteLine("Type OPC.UA Connection (confirm with enter):");
+string connOPC = System.Console.ReadLine() ?? string.Empty;
+var OPCclient = new OpcClient(connOPC);
+
 OPCclient.Connect();
 var device = new functions(deviceClient, OPCclient);
 
