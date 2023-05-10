@@ -168,11 +168,11 @@ namespace deviceLib
 
         #region Direct Methods
        
-        public async Task EmergencyStopDM(string deviceId)
+        public async Task EmergencyStopDM()
         { 
-            Console.WriteLine($"\tDevice shut down {deviceId}\n");
-        OPC.CallMethod($"ns=2;s=Device {deviceId}", $"ns=2;s=Device {deviceId}/EmergencyStop");
-        OPC.WriteNode($"ns=2;s=Device {deviceId}/ProductionRate", OpcAttribute.Value, 0);
+            Console.WriteLine($"\tDevice shut down 1\n");
+        OPC.CallMethod($"ns=2;s=Device 1", $"ns=2;s=Device 1/EmergencyStop");
+        OPC.WriteNode($"ns=2;s=Device 1/ProductionRate", OpcAttribute.Value, 0);
         await Task.Delay(1000);
     }
     private async Task<MethodResponse> EmergencyStopHandler(MethodRequest methodRequest, object userContext)
@@ -181,14 +181,14 @@ namespace deviceLib
 
         var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { machineId = default(string) });
 
-            await EmergencyStopDM(payload.machineId);
+            await EmergencyStopDM();
 
             return new MethodResponse(0);
     }
 
-    public async Task ResetErrorStatus(string deviceId)
+    public async Task ResetErrorStatus()
     {
-        OPC.CallMethod($"ns=2;s=Device {deviceId}", $"ns=2;s=Device {deviceId}/ResetErrorStatus");
+        OPC.CallMethod($"ns=2;s=Device 1", $"ns=2;s=Device 1/ResetErrorStatus");
         await Task.Delay(1000);
     }
     private async Task<MethodResponse> ResetErrorStatusHandler(MethodRequest methodRequest, object userContext)
@@ -197,30 +197,51 @@ namespace deviceLib
 
         var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { machineId = default(string) });
 
-        await ResetErrorStatus(payload.machineId);
+        await ResetErrorStatus();
 
         return new MethodResponse(0);
     }
-    private static async Task<MethodResponse> DefaultServiceHandler(MethodRequest methodRequest, object userContext)
-    {
-        Console.WriteLine($"\tMETHOD EXECUTED: {methodRequest.Name}");
+        private static async Task<MethodResponse> DefaultServiceHandler(MethodRequest methodRequest, object userContext)
+        {
+            Console.WriteLine($"\tMETHOD EXECUTED: {methodRequest.Name}");
 
-        await Task.Delay(1000);
+            await Task.Delay(1000);
 
-        return new MethodResponse(0);
-    }
+            return new MethodResponse(0);
 
-    #endregion
+        }
 
-    public async Task InitializeHandlers()
+        public async Task DecreaseDesiredProductionRate()
+        {
+            int productionRate = (int)OPC.ReadNode($"ns=2;s=Device 1/ProductionRate").Value;
+
+            OPC.WriteNode($"ns=2;s=Device 1/ProductionRate", productionRate == 0 ? productionRate : productionRate - 10);
+            OPC.Disconnect();
+            await Task.Delay(1000);
+        }
+        private async Task<MethodResponse> DecreaseDesiredProductionRate(MethodRequest methodRequest, object userContext)
+        {
+            System.Console.WriteLine($"\tEXECUTED METHOD: {methodRequest.Name}");
+
+            var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { machineId = default(string) });
+
+            await DecreaseDesiredProductionRate();
+
+            return new MethodResponse(0);
+        }
+
+        #endregion
+
+        public async Task InitializeHandlers()
     {
         await client.SetReceiveMessageHandlerAsync(OnC2dMessageReceivedAsync, client);
 
         await client.SetMethodHandlerAsync("EmergencyStop", EmergencyStopHandler, client);
         await client.SetMethodHandlerAsync("ResetErrorStatus", ResetErrorStatusHandler, client);
         await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
-        await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, client);
-    }
+        await client.SetMethodHandlerAsync("DecreaseDesiredProductionRate", DecreaseDesiredProductionRate, client);
+      
+        }
 
    }
 
