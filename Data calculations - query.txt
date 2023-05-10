@@ -13,3 +13,13 @@ INTO [temperature]
 FROM [Device-data] 
 TIMESTAMP BY IoTHub.EnqueuedTime 
 GROUP BY IoTHub.ConnectionDeviceId, HoppingWindow(minute,5,1);
+
+
+
+SELECT System.Timestamp() as windowEndTime, IoTHub.ConnectionDeviceId as deviceId,
+SUM(quantity) as sumQuantity
+INTO [Device-Errors] 
+FROM [Device-data] 
+TIMESTAMP BY IoTHub.EnqueuedTime 
+WHERE sumQuantity>3
+GROUP BY IoTHub.ConnectionDeviceId, TumblingWindow(minute,1);

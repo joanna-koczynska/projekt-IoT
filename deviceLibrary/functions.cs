@@ -8,107 +8,230 @@ using System.Text;
 using System.Xml;
 using Microsoft.VisualBasic;
 using System.Threading.Tasks;
-
-
-
+using Microsoft.Azure.Amqp.Framing;
+using System.Net.Sockets;
 
 namespace deviceLib
 {
     public class functions
     {
-        private readonly DeviceClient client;
+        private DeviceClient client;
 
-        public functions(DeviceClient deviceClient)
+        private  OpcClient OPC;
+
+        public functions(DeviceClient deviceClient, OpcClient OPC)
         {
             this.client = deviceClient;
+            this.OPC = OPC;
         }
 
-        #region Sending Messages
+        #region D2C - Sending telemetry
 
-        public async Task SendMessages(string ProductionStatus, OpcValue WorkorderId, OpcValue GoodCount, OpcValue BadCount, OpcValue Temperature)
+        public async Task SendTelemetry(dynamic data)
         {
-           
-                var data = new
-                {
-                    ProductionStatus = ProductionStatus,
-                    WorkorderId = WorkorderId.Value,
-                    GoodCount = GoodCount.Value,
-                    BadCount = BadCount.Value,
-                    Temperature = Temperature.Value,
-                };
+            var dataString = JsonConvert.SerializeObject(data);
 
-                var dataString = JsonConvert.SerializeObject(data);
-
-                Message eventMessage = new Message(Encoding.UTF8.GetBytes(dataString));
-                eventMessage.ContentType = MediaTypeNames.Application.Json;
-                eventMessage.ContentEncoding = "utf-8";
-                await client.SendEventAsync(eventMessage);
-                if(true)
+            Message eventMessage = new Message(Encoding.UTF8.GetBytes(dataString));
+            eventMessage.ContentType = MediaTypeNames.Application.Json;
+            eventMessage.ContentEncoding = "utf-8";
+            await client.SendEventAsync(eventMessage);
+            if (true)
                 await Task.Delay(10000);
-            
+
+        }
+        #endregion
+
+        #region D2C - event
+        public async Task D2C_Event(dynamic data)
+        {
+            var dataString = JsonConvert.SerializeObject(data);
+
+            Message eventMessage = new Message(Encoding.UTF8.GetBytes(dataString));
+            eventMessage.ContentType = MediaTypeNames.Application.Json;
+            eventMessage.ContentEncoding = "utf-8";
+            await client.SendEventAsync(eventMessage);
         }
 
-        #endregion Sending Messages
+        #endregion
 
+
+        #region Receiving Message
+        private async Task OnC2dMessageReceivedAsync(Message receivedMessage, object _)
+        {
+            Console.WriteLine($"\t{DateTime.Now}> C2D Message Callback - message received with Id = {receivedMessage.MessageId}");
+            PrintMessage(receivedMessage);
+            await client.CompleteAsync(receivedMessage);
+            Console.WriteLine($"\t {DateTime.Now}> Completed C2D message with Id = {receivedMessage.MessageId}");
+        }
+        private void PrintMessage(Message receivedMessage)
+        {
+            string messageData = Encoding.ASCII.GetString(receivedMessage.GetBytes());
+            Console.WriteLine($"\t\tReceived message: {messageData}");
+
+            int propCount = 0;
+            foreach (var prop in receivedMessage.Properties)
+            {
+                Console.WriteLine($"\t\tProperty[{propCount++}]> Key={prop.Key} : Value = {prop.Value}");
+            }
+        }
+
+        #endregion
 
         #region Device Twin
 
-        public async Task ReportedDeviceTwin(string propertyName, string propertyValue)
+       
+        public async Task<bool>UpdateTwinValueAsync(string name, dynamic value)
         {
-            var twin = await client.GetTwinAsync();
-            var reportedProperties = new TwinCollection();
-            reportedProperties[propertyName] = propertyValue;
+            bool upp=false;
+            try
+            {
+                var twin = await client.GetTwinAsync();
+                /*  Console.WriteLine($"\n Initial twin value received: \n{JsonConvert.SerializeObject(twin, Formatting.Indented)}");
+                  Console.WriteLine();*/
 
-            await client.UpdateReportedPropertiesAsync(reportedProperties);
+                var reportedProperties = new TwinCollection();
+                reportedProperties[name] = value;
+                await client.UpdateReportedPropertiesAsync(reportedProperties);
+                upp = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\t{DateTime.Now.ToLocalTime()}> Twin update failed with exception: {ex.Message}");
+                upp = false;
+            }
+            return upp;
+
+        }
+        public async Task TwinAsync(dynamic DeviceErrors, dynamic ProductionRate)
+        {
+            string errorResult = string.Empty;
+            uint errorValue = Convert.ToUInt32(DeviceErrors.Value);
+            Errors errors = (Errors)errorValue;
+
+            if (errors != 0)
+            {
+                int c = 0;
+                if ((errors & Errors.EmergencyStop) == Errors.EmergencyStop)
+                {
+                    errorResult += "Emergency stop";
+                    c++;
+
+                }
+                if ((errors & Errors.PowerFailure) == Errors.PowerFailure)
+                {
+                    errorResult += "PowerFailure, ";
+                    c++;
+                }
+                if ((errors & Errors.SensorFailue) == Errors.SensorFailue)
+                {
+                    errorResult += "SensorFailure, ";
+                    c++;
+                }
+                if ((errors & Errors.Unknown) == Errors.Unknown)
+                {
+                    errorResult += "Unknown, ";
+                    c++;
+                }
+
+                var data = new
+                {
+                    DeviceErrors = errorResult,
+                    quantity = c
+                };
+               
+                await UpdateTwinValueAsync("DeviceErrors", errorResult);
+                if (await UpdateTwinValueAsync("DeviceErrors", errorResult)==true)
+                {
+                    await D2C_Event(data);
+                }
+                
+                    
+            }
+            await UpdateTwinValueAsync("ProductionRate", ProductionRate+"%");
+
         }
 
-        private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object userContext)
+
+
+        private async Task OnDesiredPropertyChanged(TwinCollection desiredProperties, object _)
         {
             Console.WriteLine($"\tDesired property change:\n\t{JsonConvert.SerializeObject(desiredProperties)}");
             Console.WriteLine("\tSending current time as reported property");
             TwinCollection reportedProperties = new TwinCollection();
             reportedProperties["DateTimeLastDesiredPropertyChangeReceived"] = DateTime.Now;
 
-            await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+            await client.UpdateReportedPropertiesAsync(reportedProperties);
         }
-        #endregion Device Twin
 
-        
-/*
+        #endregion
+
+
         #region Direct Methods
-        private async Task<MethodResponse> SendMessagesHandler(MethodRequest methodRequest, object userContext)
-        {
-            Console.WriteLine($"\tMETHOD EXECUTED : {methodRequest.Name}");
-            var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { nrOfMessages = default(int), delay = default(int) });
-           
+       
+        public async Task EmergencyStopDM(string deviceId)
+        { 
+            Console.WriteLine($"\tDevice shut down {deviceId}\n");
+        OPC.CallMethod($"ns=2;s=Device {deviceId}", $"ns=2;s=Device {deviceId}/EmergencyStop");
+        OPC.WriteNode($"ns=2;s=Device {deviceId}/ProductionRate", OpcAttribute.Value, 0);
+        await Task.Delay(1000);
+    }
+    private async Task<MethodResponse> EmergencyStopHandler(MethodRequest methodRequest, object userContext)
+    {
+        Console.WriteLine($"\tMETHOD EXECUTED: {methodRequest.Name}");
+
+        var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { machineId = default(string) });
+
+            await EmergencyStopDM(payload.machineId);
+
             return new MethodResponse(0);
-        }
-        private async Task<MethodResponse> DefaultServiceHandler(MethodRequest methodRequest, object userContext)
-        {
-            Console.WriteLine($"\tMETHOS EXECUTED : {methodRequest.Name}");
-
-            await Task.Delay(1000);
-
-            return new MethodResponse(0);
-        }
-
-        #endregion*/
-
-
-
-       /* public async Task InitializeHandlers()
-        {
-            await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
-
-            await client.SetMethodHandlerAsync("SendMessages", SendMessagesHandler, client);
-
-            await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, client);
-
-        }*/
-
-
     }
 
+    public async Task ResetErrorStatus(string deviceId)
+    {
+        OPC.CallMethod($"ns=2;s=Device {deviceId}", $"ns=2;s=Device {deviceId}/ResetErrorStatus");
+        await Task.Delay(1000);
+    }
+    private async Task<MethodResponse> ResetErrorStatusHandler(MethodRequest methodRequest, object userContext)
+    {
+        Console.WriteLine($"\tMETHOD EXECUTED: {methodRequest.Name}");
 
+        var payload = JsonConvert.DeserializeAnonymousType(methodRequest.DataAsJson, new { machineId = default(string) });
+
+        await ResetErrorStatus(payload.machineId);
+
+        return new MethodResponse(0);
+    }
+    private static async Task<MethodResponse> DefaultServiceHandler(MethodRequest methodRequest, object userContext)
+    {
+        Console.WriteLine($"\tMETHOD EXECUTED: {methodRequest.Name}");
+
+        await Task.Delay(1000);
+
+        return new MethodResponse(0);
+    }
+
+    #endregion
+
+    public async Task InitializeHandlers()
+    {
+        await client.SetReceiveMessageHandlerAsync(OnC2dMessageReceivedAsync, client);
+
+        await client.SetMethodHandlerAsync("EmergencyStop", EmergencyStopHandler, client);
+        await client.SetMethodHandlerAsync("ResetErrorStatus", ResetErrorStatusHandler, client);
+        await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
+        await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, client);
+    }
+
+   }
+
+}
+    
+
+enum Errors
+{
+    EmergencyStop = 1,
+    PowerFailure = 2,
+    SensorFailue = 4,
+    Unknown = 8
 }
 
