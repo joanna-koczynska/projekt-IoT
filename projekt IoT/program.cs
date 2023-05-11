@@ -22,30 +22,36 @@ OPCclient.Connect();
 Console.WriteLine("OPC UA Connection success!");
 
 var device = new functions(deviceClient, OPCclient);
-
-
 OpcValue ProductionStatus = OPCclient.ReadNode($"ns=2;s=Device 1/ProductionStatus");
 
 while ((int)ProductionStatus.Value == 0 || (int)ProductionStatus.Value == 1)
     {
         ProductionStatus = OPCclient.ReadNode($"ns=2;s=Device 1/ProductionStatus");
         string PSResult = ((int)ProductionStatus.Value == 1) ? "Running" : "Stopped";
+ 
+    string WorkorderIdS = "";
+    if (PSResult == "Stopped")
+    { WorkorderIdS = ""; }
+    else
+    {
         OpcValue WorkorderId = OPCclient.ReadNode("ns=2;s=Device 1/WorkorderId");
-        OpcValue GoodCount = OPCclient.ReadNode("ns=2;s=Device 1/GoodCount");
+        WorkorderIdS = (string)WorkorderId.Value; 
+    }
+
+    OpcValue GoodCount = OPCclient.ReadNode("ns=2;s=Device 1/GoodCount");
         OpcValue BadCount = OPCclient.ReadNode("ns=2;s=Device 1/BadCount");
         OpcValue Temperature = OPCclient.ReadNode("ns=2;s=Device 1/Temperature");
 
         var data = new
         {
             ProductionStatus = PSResult,
-            WorkorderId = WorkorderId.Value,
+            WorkorderId = WorkorderIdS,
             GoodCount = GoodCount.Value,
             BadCount = BadCount.Value,
             Temperature = Temperature.Value,
         };
 
         OpcValue ProductionRate = OPCclient.ReadNode("ns=2;s=Device 1/ProductionRate");
-
         OpcValue DeviceErrors = OPCclient.ReadNode("ns=2;s=Device 1/DeviceError");
 
     //functions

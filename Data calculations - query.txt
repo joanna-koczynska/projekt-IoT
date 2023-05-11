@@ -21,5 +21,5 @@ SUM(quantity) as sumQuantity
 INTO [Device-Errors] 
 FROM [Device-data] 
 TIMESTAMP BY IoTHub.EnqueuedTime 
-WHERE sumQuantity>3
-GROUP BY IoTHub.ConnectionDeviceId, TumblingWindow(minute,1);
+GROUP BY IoTHub.ConnectionDeviceId, TumblingWindow(minute,1)
+HAVING sumQuantity>3;

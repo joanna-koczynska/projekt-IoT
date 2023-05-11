@@ -78,8 +78,6 @@ namespace deviceLib
         #endregion
 
         #region Device Twin
-
-       
         public async Task<bool>UpdateTwinValueAsync(string name, dynamic value)
         {
             bool upp=false;
@@ -170,9 +168,9 @@ namespace deviceLib
        
         public async Task EmergencyStopDM()
         { 
-            Console.WriteLine($"\tDevice shut down 1\n");
+            Console.WriteLine($"\tDevice Emergency Stop 1\n");
         OPC.CallMethod($"ns=2;s=Device 1", $"ns=2;s=Device 1/EmergencyStop");
-        OPC.WriteNode($"ns=2;s=Device 1/ProductionRate", OpcAttribute.Value, 0);
+        OPC.WriteNode($"ns=2;s=Device 1/EmergencyStop", OpcAttribute.Value, 1);
         await Task.Delay(1000);
     }
     private async Task<MethodResponse> EmergencyStopHandler(MethodRequest methodRequest, object userContext)
@@ -216,7 +214,6 @@ namespace deviceLib
             int productionRate = (int)OPC.ReadNode($"ns=2;s=Device 1/ProductionRate").Value;
 
             OPC.WriteNode($"ns=2;s=Device 1/ProductionRate", productionRate == 0 ? productionRate : productionRate - 10);
-            OPC.Disconnect();
             await Task.Delay(1000);
         }
         private async Task<MethodResponse> DecreaseDesiredProductionRate(MethodRequest methodRequest, object userContext)
@@ -240,7 +237,10 @@ namespace deviceLib
         await client.SetMethodHandlerAsync("ResetErrorStatus", ResetErrorStatusHandler, client);
         await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
         await client.SetMethodHandlerAsync("DecreaseDesiredProductionRate", DecreaseDesiredProductionRate, client);
-      
+            await client.SetMethodDefaultHandlerAsync(DefaultServiceHandler, client);
+
+            await client.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertyChanged, client);
+
         }
 
    }
