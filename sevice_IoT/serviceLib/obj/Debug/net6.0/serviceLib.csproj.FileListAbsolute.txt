@@ -1,0 +1,12 @@
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\bin\Debug\net6.0\serviceLib.deps.json
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\bin\Debug\net6.0\serviceLib.dll
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\bin\Debug\net6.0\serviceLib.pdb
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.csproj.AssemblyReference.cache
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.AssemblyInfoInputs.cache
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.AssemblyInfo.cs
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.csproj.CoreCompileInputs.cache
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.dll
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\refint\serviceLib.dll
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\serviceLib.pdb
+C:\Users\Asia\Desktop\STUDIA UŁ TIME\4 SEMESTR\IOT\projekt IoT\sevice_IoT\serviceLib\obj\Debug\net6.0\ref\serviceLib.dll
