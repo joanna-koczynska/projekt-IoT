@@ -61,9 +61,6 @@ while ((int)ProductionStatus.Value == 0 || (int)ProductionStatus.Value == 1)
 
 }
 
-
-  
-
 OPCclient.Disconnect();
 Console.WriteLine("Finished! Press Enter to close...");
 Console.ReadLine();
